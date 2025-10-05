@@ -183,8 +183,10 @@ export async function scrapeProviderWithSubtitles(targetUrl) {
                 const u = track.src;
                 if (u && !urls.has(u)) {
                     urls.add(u);
-                    const label = (track.label || track.getAttribute("label") || "").trim() || undefined;
-                    const lang = (track.srclang || track.getAttribute("srclang") || "").trim() || undefined;
+                    const label = (track.label || track.getAttribute("label") || "").trim() ||
+                        undefined;
+                    const lang = (track.srclang || track.getAttribute("srclang") || "").trim() ||
+                        undefined;
                     found.push({ url: u, label, lang });
                 }
             });
@@ -197,8 +199,12 @@ export async function scrapeProviderWithSubtitles(targetUrl) {
                     "").trim();
                 if (u && !urls.has(u)) {
                     urls.add(u);
-                    const label = (el.getAttribute("data-label") || el.getAttribute("label") || "").trim() || undefined;
-                    const lang = (el.getAttribute("data-lang") || el.getAttribute("lang") || "").trim() || undefined;
+                    const label = (el.getAttribute("data-label") ||
+                        el.getAttribute("label") ||
+                        "").trim() || undefined;
+                    const lang = (el.getAttribute("data-lang") ||
+                        el.getAttribute("lang") ||
+                        "").trim() || undefined;
                     found.push({ url: u, label, lang });
                 }
             });
@@ -225,29 +231,68 @@ export async function scrapeProviderWithSubtitles(targetUrl) {
             const v = s.toLowerCase();
             // common aliases mapping
             const map = {
-                eng: "en", english: "en", en_us: "en", en_gb: "en", us: "en", uk: "en",
-                spa: "es", spanish: "es", esp: "es",
-                por: "pt", portuguese: "pt", br: "pt", pt_br: "pt",
-                fre: "fr", fra: "fr", french: "fr",
-                ger: "de", deu: "de", german: "de",
-                ita: "it", italian: "it",
-                ind: "id", ina: "id", bahasa: "id",
-                tur: "tr", turkish: "tr",
-                ara: "ar", arabic: "ar",
-                hin: "hi", hindi: "hi",
-                rus: "ru", russian: "ru",
-                zho: "zh", chi: "zh", chinese: "zh", zh_cn: "zh", zh_tw: "zh",
-                kor: "ko", korean: "ko",
-                jpn: "ja", japanese: "ja",
-                vie: "vi", vietnamese: "vi",
-                pol: "pl", polish: "pl",
-                dut: "nl", nld: "nl", dutch: "nl",
-                swe: "sv", swedish: "sv",
-                nor: "no", nob: "no", nyn: "no", norwegian: "no",
-                fin: "fi", finnish: "fi",
-                dan: "da", danish: "da",
-                hun: "hu", hungarian: "hu",
-                tha: "th", thai: "th",
+                eng: "en",
+                english: "en",
+                en_us: "en",
+                en_gb: "en",
+                us: "en",
+                uk: "en",
+                spa: "es",
+                spanish: "es",
+                esp: "es",
+                por: "pt",
+                portuguese: "pt",
+                br: "pt",
+                pt_br: "pt",
+                fre: "fr",
+                fra: "fr",
+                french: "fr",
+                ger: "de",
+                deu: "de",
+                german: "de",
+                ita: "it",
+                italian: "it",
+                ind: "id",
+                ina: "id",
+                bahasa: "id",
+                tur: "tr",
+                turkish: "tr",
+                ara: "ar",
+                arabic: "ar",
+                hin: "hi",
+                hindi: "hi",
+                rus: "ru",
+                russian: "ru",
+                zho: "zh",
+                chi: "zh",
+                chinese: "zh",
+                zh_cn: "zh",
+                zh_tw: "zh",
+                kor: "ko",
+                korean: "ko",
+                jpn: "ja",
+                japanese: "ja",
+                vie: "vi",
+                vietnamese: "vi",
+                pol: "pl",
+                polish: "pl",
+                dut: "nl",
+                nld: "nl",
+                dutch: "nl",
+                swe: "sv",
+                swedish: "sv",
+                nor: "no",
+                nob: "no",
+                nyn: "no",
+                norwegian: "no",
+                fin: "fi",
+                finnish: "fi",
+                dan: "da",
+                danish: "da",
+                hun: "hu",
+                hungarian: "hu",
+                tha: "th",
+                thai: "th",
                 // added common full names from sample
                 albanian: "sq",
                 bulgarian: "bg",
@@ -260,13 +305,14 @@ export async function scrapeProviderWithSubtitles(targetUrl) {
                 hebrew: "he",
                 ukrainian: "uk",
                 urdu: "ur",
-                persian: "fa", farsi: "fa",
+                persian: "fa",
+                farsi: "fa",
                 tamil: "ta",
                 telugu: "te",
                 malayalam: "ml",
                 malay: "ms",
                 swahili: "sw",
-                amharic: "am"
+                amharic: "am",
             };
             if (map[v])
                 return map[v];
@@ -290,7 +336,9 @@ export async function scrapeProviderWithSubtitles(targetUrl) {
             if (byToken)
                 return byToken;
             // extract filename without extension and split on separators/spaces
-            const file = lower.substring(lower.lastIndexOf("/") + 1).replace(/\.[a-z0-9]+$/, "");
+            const file = lower
+                .substring(lower.lastIndexOf("/") + 1)
+                .replace(/\.[a-z0-9]+$/, "");
             const parts = file.split(/[^a-z]+/).filter(Boolean);
             const candidates = [];
             for (const p of parts) {
@@ -309,7 +357,19 @@ export async function scrapeProviderWithSubtitles(targetUrl) {
         };
         const subtitles = Array.from(subUrls).map((u) => {
             const meta = domMeta.get(u);
-            const label = meta?.label;
+            let label = meta?.label;
+            if (!label) {
+                try {
+                    const file = u.substring(u.lastIndexOf("/") + 1);
+                    const noExt = file.replace(/\.[a-z0-9]+$/i, "");
+                    const pretty = decodeURIComponent(noExt)
+                        .replace(/[\._\-]+/g, " ")
+                        .trim();
+                    if (pretty)
+                        label = pretty;
+                }
+                catch { }
+            }
             const byLangAttr = toIso(meta?.lang);
             const byLabel = toIso(label);
             const byUrl = inferFromUrl(u);

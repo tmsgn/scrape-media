@@ -2,11 +2,37 @@ import express from "express";
 import cors from "cors";
 import { providers, PER_PROVIDER_MAX_MS } from "./providers.js";
 import { scrapeProviderWithSubtitles } from "./scraper.js";
+import dotenv from "dotenv";
+// Load environment variables
+dotenv.config();
 const app = express();
 app.use(cors());
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 app.get("/health", (_req, res) => res.json({ ok: true }));
-app.get("/movie/:tmdbId", async (req, res) => {
+// Simple API token auth middleware:
+// - Header: 'API-TOKEN: <token>' (preferred)
+// - Header: 'Authorization: Bearer <token>' (alternative)
+// - Optional: Query string '?api_token=...' when ALLOW_QUERY_TOKEN=true
+const REQUIRED_TOKEN = process.env.API_TOKEN || "";
+const ALLOW_QUERY_TOKEN = /^(1|true|yes)$/i.test(process.env.ALLOW_QUERY_TOKEN || "");
+const authMiddleware = (req, res, next) => {
+    if (!REQUIRED_TOKEN)
+        return res.status(500).json({ error: "Server missing API_TOKEN" });
+    const headerToken = (req.header("API-TOKEN") || "").trim();
+    const authHeader = (req.header("Authorization") || req.header("authorization") || "").trim();
+    const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+    const bearerToken = (bearerMatch?.[1] || "").trim();
+    const queryToken = ALLOW_QUERY_TOKEN
+        ? String(req.query?.api_token ?? "").trim()
+        : "";
+    const provided = headerToken || bearerToken || queryToken;
+    if (!provided || provided !== REQUIRED_TOKEN) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    return next();
+};
+// Protect all scraping routes
+app.get("/movie/:tmdbId", authMiddleware, async (req, res) => {
     const id = req.params.tmdbId;
     const matched = providers.filter((p) => p.idType === "tmdb");
     if (matched.length === 0)
@@ -41,7 +67,7 @@ app.get("/movie/:tmdbId", async (req, res) => {
             .json({ urls: [], subtitles: [], error: e?.message ?? "Scrape failed" });
     }
 });
-app.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
+app.get("/tv/:tmdbId/:season/:episode", authMiddleware, async (req, res) => {
     const { tmdbId, season, episode } = req.params;
     const id = tmdbId;
     const s = Number(season);

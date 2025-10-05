@@ -3,6 +3,12 @@ import cors from "cors";
 import { providers, PER_PROVIDER_MAX_MS } from "./providers.js";
 import { scrapeProviderWithSubtitles } from "./scraper.js";
 import type { Subtitle } from "./types.js";
+import dotenv from "dotenv";
+import swaggerUi from "swagger-ui-express";
+import { openapiSpec } from "./swagger.js";
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -10,7 +16,24 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-app.get("/movie/:tmdbId", async (req, res) => {
+// Swagger UI and OpenAPI JSON
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapiSpec));
+app.get("/openapi.json", (_req, res) => res.json(openapiSpec));
+
+// Simple API token auth middleware: expects header 'API-TOKEN: <token>'
+const REQUIRED_TOKEN = process.env.API_TOKEN || "";
+const authMiddleware: express.RequestHandler = (req, res, next) => {
+  if (!REQUIRED_TOKEN)
+    return res.status(500).json({ error: "Server missing API_TOKEN" });
+  const headerToken = (req.header("API-TOKEN") || "").trim();
+  if (!headerToken || headerToken !== REQUIRED_TOKEN) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  return next();
+};
+
+// Protect all scraping routes
+app.get("/movie/:tmdbId", authMiddleware, async (req, res) => {
   const id = req.params.tmdbId;
   const matched = providers.filter((p) => p.idType === "tmdb");
   if (matched.length === 0)
@@ -53,7 +76,7 @@ app.get("/movie/:tmdbId", async (req, res) => {
   }
 });
 
-app.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
+app.get("/tv/:tmdbId/:season/:episode", authMiddleware, async (req, res) => {
   const { tmdbId, season, episode } = req.params as any;
   const id = tmdbId;
   const s = Number(season);
