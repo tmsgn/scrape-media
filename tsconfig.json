@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+    "target": "ES2022",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "strict": false
+  },
+  "include": ["src"]
+}
