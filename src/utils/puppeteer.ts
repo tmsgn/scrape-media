@@ -37,7 +37,7 @@ export async function launchBrowser(
       headless,
     });
 
-  const launchOptions: LaunchOptions = {
+    const launchOptions: LaunchOptions = {
       executablePath: executablePath || undefined,
       headless,
       args: mergedArgs,
