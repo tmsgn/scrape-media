@@ -53,14 +53,9 @@ async function createPage(browser) {
     }
     if (!page)
         throw lastErr || new Error("Failed to open page");
-    // Set viewport and UA with a retry to survive transient 'Emulation.setTouchEmulationEnabled' errors
+    // Set UA (skip viewport emulation to avoid Emulation.setTouchEmulationEnabled in serverless)
     for (let i = 0; i < 2; i++) {
         try {
-            await page.setViewport({
-                width: 1366,
-                height: 768,
-                deviceScaleFactor: 1,
-            });
             await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
             break;
         }

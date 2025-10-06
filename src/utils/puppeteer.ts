@@ -46,8 +46,7 @@ export async function launchBrowser(
     } catch {}
 
     // Use Sparticuz-recommended launch settings for serverless platforms
-    // Note: Puppeteer >= v20 supports boolean headless for Chromium in Lambda/Vercel
-    const headless: any = true;
+    const headless: any = (chromium as any).headless ?? true;
     const chromiumArgs: string[] = Array.isArray((chromium as any).args)
       ? (chromium as any).args
       : [];
@@ -66,7 +65,8 @@ export async function launchBrowser(
       executablePath: executablePath || undefined,
       headless,
       args,
-      defaultViewport: { width: 1366, height: 768, deviceScaleFactor: 1 },
+      // Use Chromium's suggested viewport settings to keep DevTools emulation consistent
+      defaultViewport: (chromium as any).defaultViewport ?? null,
       ignoreHTTPSErrors: true,
       protocolTimeout: 60_000,
       userDataDir: (process.env.TMPDIR || "/tmp") + "/puppeteer_dev_profile",
