@@ -1,56 +1,74 @@
-# Scraper Express API
+# Scraper Express API (Rental-ready)
 
-A minimal Express API exposing scraping endpoints that return discovered .m3u8 URLs and subtitles.
+Express API that scrapes streaming sources (M3U8) and subtitles from multiple providers, with Bearer API key auth, rate limiting, usage tracking, and Vercel serverless compatibility.
 
 ## Setup
 
 1. Install dependencies
 2. Copy environment file
    - Copy `.env.example` to `.env`
-   - Set `API_TOKEN` to a secret value
+   - Set `API_KEYS` to one or more keys (comma-separated)
 3. Run in dev (hot reload)
 
 The server launches on http://localhost:8080 by default (configurable via `PORT`).
 
-## Security: API token header
+Swagger UI: `http://localhost:8080/docs`
+OpenAPI JSON: `http://localhost:8080/openapi.json`
 
-All scraping endpoints require a header named `API-TOKEN` to match the `API_TOKEN` in your `.env` file. The `/health` endpoint is public.
+## Security: Bearer API Key
 
-PowerShell examples:
+- Use `Authorization: Bearer <your-api-key>`
+- Allow-list CORS origins via `CORS_ORIGINS`.
+- Helmet is enabled for security headers.
+
+PowerShell example:
 
 ```powershell
-# Without token (should return 401)
-curl -Method GET "http://localhost:8080/movie/12345"
-
-# With token
-$Headers = @{ 'API-TOKEN' = 'change-me' }
-curl -Method GET -Headers $Headers "http://localhost:8080/movie/12345"
+$Headers = @{ 'Authorization' = 'Bearer key1' }
+curl -Method GET -Headers $Headers "http://localhost:8080/movie/597"
 ```
-
-Swagger UI is available when the server is running at `http://localhost:8080/docs`.
-The raw OpenAPI JSON is available at `http://localhost:8080/openapi.json`.
-Protected endpoints require the `API-TOKEN` header. Set `API_TOKEN` in `.env` and send the same value in requests.
-
-Example request (Thunder Client/Postman):
-
-- Method: GET
-- URL: `http://localhost:8080/movie/597`
-- Headers: `API-TOKEN: <your-token>`
 
 ## Endpoints
 
 - GET `/health` — health check
-- GET `/movie/:tmdbId` — scrape movie embeds using TMDB id
-- GET `/tv/:tmdbId/:season/:episode` — scrape show episode embeds using TMDB id
+- GET `/movie/:tmdbId` — scrape movie
+- GET `/tv/:tmdbId/:season/:episode` — scrape episode
+- GET `/me/usage` — views today for your API key
 
-Response JSON shape:
+## Response shape
+
+Success:
 
 ```
-{ "urls": string[], "subtitles": { url: string, label?: string, lang?: string, langCode?: string }[], "firstProvider"?: string, "error"?: string }
+{ "success": true, "data": { "m3u8": string[], "subtitles": { url: string, label?: string, lang?: string, langCode?: string }[] } }
 ```
+
+Error:
+
+```
+{ "success": false, "error": string }
+```
+
+## Rate limiting
+
+Token-bucket per API key. Configure `RATE_LIMIT_PER_MIN` and `RATE_LIMIT_BURST`.
+
+## Usage tracking
+
+- Increments a view when at least one stream is found.
+- Uses Vercel Postgres if `DATABASE_URL` is set; otherwise falls back to in-memory.
+- Billing can be computed per 1000 views using the stored counts.
+
+## Deployment to Vercel
+
+This repo includes serverless function handlers under `api/`.
+
+1. Push to GitHub and import into Vercel
+2. Set environment variables: `API_KEYS`, `CORS_ORIGINS`, `RATE_LIMIT_PER_MIN`, `RATE_LIMIT_BURST`, `DATABASE_URL`
+3. Use endpoints like `/api/movie/597` and `/api/tv/1396/1/1`
 
 ## Notes
 
-- Uses headless Chromium via Puppeteer. Some providers may block or rate limit.
+- Puppeteer is used to detect network requests. Some providers may change their structure.
 - Network interception aborts heavy resources to make scraping faster.
 - A per-provider timeout stops waiting after 45s.

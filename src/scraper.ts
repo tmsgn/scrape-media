@@ -1,10 +1,11 @@
-import puppeteer, {
+import type {
   Browser,
   HTTPRequest,
   HTTPResponse,
   Page,
   Frame,
-} from "puppeteer";
+} from "puppeteer-core";
+import { launchBrowser } from "./utils/puppeteer.js";
 import type { Subtitle } from "./types.js";
 
 function isM3U8(url: string) {
@@ -128,7 +129,7 @@ export async function scrapeProvider(targetUrl: string): Promise<string[]> {
   ];
 
   try {
-    browser = await puppeteer.launch({ headless: true, args: launchArgs });
+    browser = await launchBrowser({ args: launchArgs });
     const page = await createPage(browser);
     attachNetworkCollectors(page, m3u8Urls, subUrls);
 
@@ -177,7 +178,7 @@ export async function scrapeProviderWithSubtitles(
   ];
 
   try {
-    browser = await puppeteer.launch({ headless: true, args: launchArgs });
+    browser = await launchBrowser({ args: launchArgs });
     const page = await createPage(browser);
     attachNetworkCollectors(page, m3u8Urls, subUrls);
 

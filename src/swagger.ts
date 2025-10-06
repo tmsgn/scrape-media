@@ -8,20 +8,35 @@ const options: swaggerJsdoc.Options = {
       title: "Scraper Express API",
       version: "1.0.0",
       description:
-        "Simple Express API that scrapes streaming sources and subtitles. Protected with an API-TOKEN header.",
+        "Express API that scrapes streaming sources and subtitles. Secured with Bearer API key.",
     },
     servers: [{ url: "http://localhost:8080" }],
     components: {
       securitySchemes: {
-        ApiToken: {
-          type: "apiKey",
-          in: "header",
-          name: "API-TOKEN",
-          description:
-            "Provide the API token configured on the server via the API-TOKEN header.",
+        BearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "API Key",
+          description: "Provide your API key as a Bearer token.",
         },
       },
       schemas: {
+        EnvelopeSuccess: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", enum: [true] },
+            data: { type: "object" },
+          },
+          required: ["success", "data"],
+        },
+        EnvelopeError: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", enum: [false] },
+            error: { type: "string" },
+          },
+          required: ["success", "error"],
+        },
         Subtitle: {
           type: "object",
           properties: {
@@ -35,15 +50,14 @@ const options: swaggerJsdoc.Options = {
         ScrapeResult: {
           type: "object",
           properties: {
-            urls: { type: "array", items: { type: "string" } },
+            m3u8: { type: "array", items: { type: "string" } },
             subtitles: {
               type: "array",
               items: { $ref: "#/components/schemas/Subtitle" },
             },
             firstProvider: { type: "string", nullable: true },
-            error: { type: "string" },
           },
-          required: ["urls", "subtitles"],
+          required: ["m3u8", "subtitles"],
         },
       },
     },
@@ -70,7 +84,7 @@ const options: swaggerJsdoc.Options = {
       "/movie/{tmdbId}": {
         get: {
           summary: "Scrape sources for a movie by TMDB id",
-          security: [{ ApiToken: [] }],
+          security: [{ BearerAuth: [] }],
           parameters: [
             {
               name: "tmdbId",
@@ -85,24 +99,52 @@ const options: swaggerJsdoc.Options = {
               description: "Scrape result",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/ScrapeResult" },
+                  schema: {
+                    allOf: [
+                      { $ref: "#/components/schemas/EnvelopeSuccess" },
+                      {
+                        type: "object",
+                        properties: {
+                          data: { $ref: "#/components/schemas/ScrapeResult" },
+                        },
+                        required: ["data"],
+                      },
+                    ],
+                  },
                 },
               },
             },
             "401": {
               description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/EnvelopeError" },
+                },
+              },
             },
             "400": {
-              description: "No providers for tmdb",
+              description: "Invalid input",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/EnvelopeError" },
+                },
+              },
             },
-            "500": { description: "Scrape failed" },
+            "500": {
+              description: "Scrape failed",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/EnvelopeError" },
+                },
+              },
+            },
           },
         },
       },
       "/tv/{tmdbId}/{season}/{episode}": {
         get: {
           summary: "Scrape sources for a TV episode by TMDB id",
-          security: [{ ApiToken: [] }],
+          security: [{ BearerAuth: [] }],
           parameters: [
             {
               name: "tmdbId",
@@ -128,15 +170,45 @@ const options: swaggerJsdoc.Options = {
               description: "Scrape result",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/ScrapeResult" },
+                  schema: {
+                    allOf: [
+                      { $ref: "#/components/schemas/EnvelopeSuccess" },
+                      {
+                        type: "object",
+                        properties: {
+                          data: { $ref: "#/components/schemas/ScrapeResult" },
+                        },
+                        required: ["data"],
+                      },
+                    ],
+                  },
                 },
               },
             },
-            "401": { description: "Unauthorized" },
-            "400": {
-              description: "Invalid season/episode or no providers for tmdb",
+            "401": {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/EnvelopeError" },
+                },
+              },
             },
-            "500": { description: "Scrape failed" },
+            "400": {
+              description: "Invalid season/episode",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/EnvelopeError" },
+                },
+              },
+            },
+            "500": {
+              description: "Scrape failed",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/EnvelopeError" },
+                },
+              },
+            },
           },
         },
       },

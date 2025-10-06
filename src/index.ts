@@ -1,130 +1,51 @@
 import express from "express";
 import cors from "cors";
-import { providers, PER_PROVIDER_MAX_MS } from "./providers.js";
-import { scrapeProviderWithSubtitles } from "./scraper.js";
-import type { Subtitle } from "./types.js";
+import helmet from "helmet";
 import dotenv from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import { openapiSpec } from "./swagger.js";
+import { buildRouter } from "./routes/index.js";
+import {
+  corsOrigins,
+  apiKeys,
+  RATE_LIMIT_PER_MIN,
+  RATE_LIMIT_BURST,
+} from "./utils/config.js";
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-app.use(cors());
-const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
+// Security headers
+app.use(helmet());
+
+// CORS: allow only trusted origins
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // allow same-origin / server-to-server
+      if (corsOrigins.has("*")) return cb(null, true);
+      if (corsOrigins.has(origin)) return cb(null, true);
+      return cb(new Error("CORS not allowed"));
+    },
+    credentials: true,
+  })
+);
+
+// Health and docs
 app.get("/health", (_req, res) => res.json({ ok: true }));
-
-// Swagger UI and OpenAPI JSON
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapiSpec));
 app.get("/openapi.json", (_req, res) => res.json(openapiSpec));
 
-// Simple API token auth middleware: expects header 'API-TOKEN: <token>'
-const REQUIRED_TOKEN = process.env.API_TOKEN || "";
-const authMiddleware: express.RequestHandler = (req, res, next) => {
-  if (!REQUIRED_TOKEN)
-    return res.status(500).json({ error: "Server missing API_TOKEN" });
-  const headerToken = (req.header("API-TOKEN") || "").trim();
-  if (!headerToken || headerToken !== REQUIRED_TOKEN) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  return next();
-};
+// API routes (auth, rate limit, tracking inside)
+app.use("/", buildRouter());
 
-// Protect all scraping routes
-app.get("/movie/:tmdbId", authMiddleware, async (req, res) => {
-  const id = req.params.tmdbId;
-  const matched = providers.filter((p) => p.idType === "tmdb");
-  if (matched.length === 0)
-    return res.status(400).json({ urls: [], error: "No providers for tmdb" });
-
-  try {
-    const found = new Set<string>();
-    const subFound = new Map<string, Subtitle>();
-    let firstProvider: string | null = null;
-
-    for (const p of matched) {
-      const targetUrl = p.url({ type: "movie", id });
-      const race = Promise.race<{
-        urls: string[];
-        subtitles: Subtitle[];
-      }>([
-        scrapeProviderWithSubtitles(targetUrl),
-        new Promise<{ urls: string[]; subtitles: Subtitle[] }>((r) =>
-          setTimeout(() => r({ urls: [], subtitles: [] }), PER_PROVIDER_MAX_MS)
-        ),
-      ]);
-      const { urls, subtitles } = await race;
-      urls.forEach((u) => found.add(u));
-      subtitles.forEach((s) => subFound.set(s.url, s));
-      if (found.size > 0) {
-        firstProvider = p.name;
-        break;
-      }
-    }
-
-    return res.json({
-      urls: Array.from(found),
-      subtitles: Array.from(subFound.values()),
-      firstProvider,
-    });
-  } catch (e: any) {
-    return res
-      .status(500)
-      .json({ urls: [], subtitles: [], error: e?.message ?? "Scrape failed" });
-  }
-});
-
-app.get("/tv/:tmdbId/:season/:episode", authMiddleware, async (req, res) => {
-  const { tmdbId, season, episode } = req.params as any;
-  const id = tmdbId;
-  const s = Number(season);
-  const ep = Number(episode);
-  if (!Number.isFinite(s) || !Number.isFinite(ep))
-    return res.status(400).json({ urls: [], error: "Invalid season/episode" });
-
-  const matched = providers.filter((p) => p.idType === "tmdb");
-  if (matched.length === 0)
-    return res.status(400).json({ urls: [], error: "No providers for tmdb" });
-
-  try {
-    const found = new Set<string>();
-    const subFound = new Map<string, Subtitle>();
-    let firstProvider: string | null = null;
-
-    for (const p of matched) {
-      const targetUrl = p.url({ type: "show", id, season: s, episode: ep });
-      const race = Promise.race<{
-        urls: string[];
-        subtitles: Subtitle[];
-      }>([
-        scrapeProviderWithSubtitles(targetUrl),
-        new Promise<{ urls: string[]; subtitles: Subtitle[] }>((r) =>
-          setTimeout(() => r({ urls: [], subtitles: [] }), PER_PROVIDER_MAX_MS)
-        ),
-      ]);
-      const { urls, subtitles } = await race;
-      urls.forEach((u) => found.add(u));
-      subtitles.forEach((s) => subFound.set(s.url, s));
-      if (found.size > 0) {
-        firstProvider = p.name;
-        break;
-      }
-    }
-
-    return res.json({
-      urls: Array.from(found),
-      subtitles: Array.from(subFound.values()),
-      firstProvider,
-    });
-  } catch (e: any) {
-    return res
-      .status(500)
-      .json({ urls: [], subtitles: [], error: e?.message ?? "Scrape failed" });
-  }
-});
-
+const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 app.listen(PORT, () => {
+  const origins = Array.from(corsOrigins).join(", ") || "(none)";
+  console.log(
+    `[config] api keys: ${apiKeys.size}, cors origins: ${origins}, rate-limit: ${RATE_LIMIT_PER_MIN}/min (burst ${RATE_LIMIT_BURST})`
+  );
   console.log(`Express API listening on http://localhost:${PORT}`);
 });

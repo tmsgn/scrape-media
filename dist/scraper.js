@@ -1,4 +1,4 @@
-import puppeteer from "puppeteer";
+import { launchBrowser } from "./utils/puppeteer.js";
 function isM3U8(url) {
     return /\.m3u8(\?|$)/i.test(url);
 }
@@ -120,7 +120,7 @@ export async function scrapeProvider(targetUrl) {
         "--allow-running-insecure-content",
     ];
     try {
-        browser = await puppeteer.launch({ headless: true, args: launchArgs });
+        browser = await launchBrowser({ args: launchArgs });
         const page = await createPage(browser);
         attachNetworkCollectors(page, m3u8Urls, subUrls);
         await page.goto(targetUrl, {
@@ -165,7 +165,7 @@ export async function scrapeProviderWithSubtitles(targetUrl) {
         "--allow-running-insecure-content",
     ];
     try {
-        browser = await puppeteer.launch({ headless: true, args: launchArgs });
+        browser = await launchBrowser({ args: launchArgs });
         const page = await createPage(browser);
         attachNetworkCollectors(page, m3u8Urls, subUrls);
         await page.goto(targetUrl, {
