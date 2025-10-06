@@ -8,12 +8,24 @@ export async function launchBrowser(
     const { default: chromium } = await import("@sparticuz/chromium");
     const puppeteer = await import("puppeteer-core");
 
+    // If a remote browser is provided, connect instead of launching locally
+    const wsEndpoint =
+      process.env.PUPPETEER_BROWSER_WS || process.env.BROWSER_WS_ENDPOINT;
+    if (wsEndpoint) {
+      return puppeteer.connect({
+        browserWSEndpoint: wsEndpoint,
+        protocolTimeout: 60000,
+      }) as unknown as Browser;
+    }
+
     // Optional: disabling WebGL can reduce overhead on serverless
     try {
       (chromium as any).setGraphicsMode = false;
     } catch {}
 
-    const executablePath = await chromium.executablePath();
+    // If using the standard package, this extracts to /tmp; alternatively, a remote pack can be provided.
+    const packUrl = process.env.CHROMIUM_PACK_URL;
+    const executablePath = await chromium.executablePath(packUrl);
 
     // Merge Puppeteer's defaults with Chromium's recommended flags
     const headless: any = "shell"; // explicit for Puppeteer >= v20
