@@ -10,6 +10,8 @@ export async function launchBrowser(
   if (isServerless) {
     const { default: chromium } = await import("@sparticuz/chromium");
     const puppeteer = await import("puppeteer-core");
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
 
     // If a remote browser is provided, connect instead of launching locally
     const wsEndpoint =
@@ -24,6 +26,24 @@ export async function launchBrowser(
     // If using the standard package, this extracts to /tmp; alternatively, a remote pack can be provided.
     const packUrl = process.env.CHROMIUM_PACK_URL;
     const executablePath = await chromium.executablePath(packUrl);
+
+    // Housekeeping: clean up previous temp/user data to avoid filling /tmp
+    try {
+      const tmp = process.env.TMPDIR || "/tmp";
+      const toRemove = [
+        path.join(tmp, "puppeteer_dev_profile"),
+        path.join(tmp, "puppeteer"),
+        path.join(tmp, "corejs"),
+        path.join(tmp, ".org.chromium.Chromium"),
+      ];
+      await Promise.all(
+        toRemove.map(async (p) => {
+          try {
+            await fs.rm(p, { recursive: true, force: true });
+          } catch {}
+        })
+      );
+    } catch {}
 
     // Use Sparticuz-recommended launch settings for serverless platforms
     // Note: Puppeteer >= v20 supports boolean headless for Chromium in Lambda/Vercel
@@ -49,6 +69,7 @@ export async function launchBrowser(
       defaultViewport: { width: 1366, height: 768, deviceScaleFactor: 1 },
       ignoreHTTPSErrors: true,
       protocolTimeout: 60_000,
+      userDataDir: (process.env.TMPDIR || "/tmp") + "/puppeteer_dev_profile",
       env: {
         ...process.env,
         LD_LIBRARY_PATH: [
