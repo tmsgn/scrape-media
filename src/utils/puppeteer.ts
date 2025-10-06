@@ -18,24 +18,7 @@ export async function launchBrowser(
     // Merge Puppeteer's defaults with Chromium's recommended flags
     const headless: any = "shell"; // explicit for Puppeteer >= v20
     const mergedArgs = puppeteer.defaultArgs({
-      args: [
-        ...(Array.isArray((chromium as any).args)
-          ? (chromium as any).args
-          : []),
-        // Direct Puppeteer to use /tmp for user data/cache dirs
-        `--user-data-dir=/tmp/puppeteer_userdata`,
-        `--data-path=/tmp/puppeteer_data`,
-        `--disk-cache-dir=/tmp/puppeteer_cache`,
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--single-process",
-        "--autoplay-policy=no-user-gesture-required",
-        "--mute-audio",
-        "--ignore-certificate-errors",
-        "--allow-running-insecure-content",
-      ],
+      args: Array.isArray((chromium as any).args) ? (chromium as any).args : [],
       headless,
     });
 
@@ -58,6 +41,8 @@ export async function launchBrowser(
           .join(":"),
         FONTCONFIG_PATH: process.env.FONTCONFIG_PATH || "/tmp",
         TMPDIR: process.env.TMPDIR || "/tmp",
+        HOME: process.env.HOME || "/tmp",
+        XDG_CACHE_HOME: process.env.XDG_CACHE_HOME || "/tmp",
       },
       ...options,
     } as PuppeteerLaunchOptions;
