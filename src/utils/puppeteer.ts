@@ -19,7 +19,13 @@ export async function launchBrowser(
     const headless: any = "shell"; // explicit for Puppeteer >= v20
     const mergedArgs = puppeteer.defaultArgs({
       args: [
-        ...(Array.isArray((chromium as any).args) ? (chromium as any).args : []),
+        ...(Array.isArray((chromium as any).args)
+          ? (chromium as any).args
+          : []),
+        // Direct Puppeteer to use /tmp for user data/cache dirs
+        `--user-data-dir=/tmp/puppeteer_userdata`,
+        `--data-path=/tmp/puppeteer_data`,
+        `--disk-cache-dir=/tmp/puppeteer_cache`,
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
@@ -51,6 +57,7 @@ export async function launchBrowser(
           .filter(Boolean)
           .join(":"),
         FONTCONFIG_PATH: process.env.FONTCONFIG_PATH || "/tmp",
+        TMPDIR: process.env.TMPDIR || "/tmp",
       },
       ...options,
     } as PuppeteerLaunchOptions;
