@@ -1,17 +1,16 @@
 {
   "version": 2,
+  "regions": ["iad1"],
   "functions": {
     "api/**/*.ts": {
       "runtime": "nodejs20.x",
       "memory": 1024,
-      "maxDuration": 60,
-      "regions": ["iad1"]
+      "maxDuration": 60
     },
     "api/**/*.js": {
       "runtime": "nodejs20.x",
       "memory": 1024,
-      "maxDuration": 60,
-      "regions": ["iad1"]
+      "maxDuration": 60
     }
   }
 }
