@@ -20,7 +20,9 @@ const app = express();
 // Security headers (TS fix for ESM/types):
 // Some environments/types resolve helmet import as a namespace without call signatures.
 // Cast to a callable middleware factory to satisfy TS across NodeNext/ESM.
-const helmetMw = (helmetPkg as unknown as (opts?: any) => import("express").RequestHandler);
+const helmetMw = helmetPkg as unknown as (
+  opts?: any
+) => import("express").RequestHandler;
 app.use(helmetMw());
 
 // CORS: allow only trusted origins

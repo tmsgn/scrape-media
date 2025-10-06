@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@sparticuz/chromium':
-        specifier: ^126.0.0
-        version: 126.0.0
+        specifier: ^140.0.0
+        version: 140.0.0
       '@vercel/postgres':
         specifier: ^0.10.0
         version: 0.10.0
@@ -241,9 +241,9 @@ packages:
   '@scarf/scarf@1.4.0':
     resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
 
-  '@sparticuz/chromium@126.0.0':
-    resolution: {integrity: sha512-qqGQmZQj3y0/V2osKswRHbzK4Qe80YHSDnpt6ac51hsY1bMDinMS9Q+eEmcL+re2MEhYN+ykoV9BY8Dyw1Lyjg==}
-    engines: {node: '>= 16'}
+  '@sparticuz/chromium@140.0.0':
+    resolution: {integrity: sha512-pDyHiSp+buakpUq23b74JPC9T5M58665y6ULlh8uSuIDK0vxVGyLzjTTigQL202c6+0+NNp1Po5rgWcT7JSO5g==}
+    engines: {node: '>=20.11.0'}
 
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
@@ -1230,7 +1230,7 @@ snapshots:
 
   '@scarf/scarf@1.4.0': {}
 
-  '@sparticuz/chromium@126.0.0':
+  '@sparticuz/chromium@140.0.0':
     dependencies:
       follow-redirects: 1.15.11
       tar-fs: 3.1.1

@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
+import helmetPkg from "helmet";
 import dotenv from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import { openapiSpec } from "./swagger.js";
@@ -9,8 +9,11 @@ import { corsOrigins, apiKeys, RATE_LIMIT_PER_MIN, RATE_LIMIT_BURST, } from "./u
 // Load environment variables
 dotenv.config();
 const app = express();
-// Security headers
-app.use(helmet());
+// Security headers (TS fix for ESM/types):
+// Some environments/types resolve helmet import as a namespace without call signatures.
+// Cast to a callable middleware factory to satisfy TS across NodeNext/ESM.
+const helmetMw = helmetPkg;
+app.use(helmetMw());
 // CORS: allow only trusted origins
 app.use(cors({
     origin: (origin, cb) => {
