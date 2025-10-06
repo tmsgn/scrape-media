@@ -21,27 +21,34 @@ export async function launchBrowser(
       }) as unknown as Browser;
     }
 
-    // Optional: disabling WebGL can reduce overhead on serverless
-    try {
-      (chromium as any).setGraphicsMode = false;
-    } catch {}
-
     // If using the standard package, this extracts to /tmp; alternatively, a remote pack can be provided.
     const packUrl = process.env.CHROMIUM_PACK_URL;
     const executablePath = await chromium.executablePath(packUrl);
 
-    // Merge Puppeteer's defaults with Chromium's recommended flags
-    const headless: any = "shell"; // explicit for Puppeteer >= v20
-    const mergedArgs = puppeteer.defaultArgs({
-      args: Array.isArray((chromium as any).args) ? (chromium as any).args : [],
-      headless,
-    });
+    // Use Sparticuz-recommended launch settings for serverless platforms
+    // Note: Puppeteer >= v20 supports boolean headless for Chromium in Lambda/Vercel
+    const headless: any = true;
+    const chromiumArgs: string[] = Array.isArray((chromium as any).args)
+      ? (chromium as any).args
+      : [];
+    const extraArgs: string[] = Array.isArray((options as any)?.args)
+      ? ((options as any).args as string[])
+      : [];
+    const args = [
+      ...chromiumArgs,
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      ...extraArgs,
+    ];
 
     const launchOptions: LaunchOptions = {
       executablePath: executablePath || undefined,
       headless,
-      args: mergedArgs,
+      args,
       defaultViewport: { width: 1366, height: 768, deviceScaleFactor: 1 },
+      ignoreHTTPSErrors: true,
+      protocolTimeout: 60_000,
       env: {
         ...process.env,
         LD_LIBRARY_PATH: [

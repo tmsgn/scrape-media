@@ -38,7 +38,21 @@ function attachNetworkCollectors(page, m3u8, subs) {
     });
 }
 async function createPage(browser) {
-    const page = await browser.newPage();
+    // Retry opening a page in case the browser is still warming up in serverless
+    let page = null;
+    let lastErr;
+    for (let i = 0; i < 3; i++) {
+        try {
+            page = await browser.newPage();
+            break;
+        }
+        catch (e) {
+            lastErr = e;
+            await delay(250);
+        }
+    }
+    if (!page)
+        throw lastErr || new Error("Failed to open page");
     await page.setViewport({ width: 1366, height: 768, deviceScaleFactor: 1 });
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
     await page.setDefaultNavigationTimeout(30000);
@@ -123,10 +137,21 @@ export async function scrapeProvider(targetUrl) {
         browser = await launchBrowser({ args: launchArgs });
         const page = await createPage(browser);
         attachNetworkCollectors(page, m3u8Urls, subUrls);
-        await page.goto(targetUrl, {
-            waitUntil: "domcontentloaded",
-            timeout: 30000,
-        });
+        // Retry navigation once to avoid transient 'session closed' during cold start
+        for (let i = 0; i < 2; i++) {
+            try {
+                await page.goto(targetUrl, {
+                    waitUntil: "domcontentloaded",
+                    timeout: 30000,
+                });
+                break;
+            }
+            catch (e) {
+                if (i === 1)
+                    throw e;
+                await delay(300);
+            }
+        }
         await delay(PASSIVE_WAIT_MS);
         if (m3u8Urls.size > 0)
             return Array.from(m3u8Urls);
@@ -168,10 +193,20 @@ export async function scrapeProviderWithSubtitles(targetUrl) {
         browser = await launchBrowser({ args: launchArgs });
         const page = await createPage(browser);
         attachNetworkCollectors(page, m3u8Urls, subUrls);
-        await page.goto(targetUrl, {
-            waitUntil: "domcontentloaded",
-            timeout: 30000,
-        });
+        for (let i = 0; i < 2; i++) {
+            try {
+                await page.goto(targetUrl, {
+                    waitUntil: "domcontentloaded",
+                    timeout: 30000,
+                });
+                break;
+            }
+            catch (e) {
+                if (i === 1)
+                    throw e;
+                await delay(300);
+            }
+        }
         await delay(PASSIVE_WAIT_MS);
         // Attempt to extract subtitles from common players in DOM as a fallback
         const domSubs = await page.evaluate(() => {
