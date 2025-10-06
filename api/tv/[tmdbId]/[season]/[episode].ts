@@ -5,6 +5,23 @@ import { incrementView } from "../../../../src/services/usage.js";
 import { scrapeEpisode } from "../../../../src/services/scrapeService.js";
 
 export default async function handler(req: any, res: any) {
+  // CORS headers
+  const origin = req.headers.origin || "*";
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Vary", "Origin");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    req.headers["access-control-request-headers"] ||
+      "authorization, content-type, x-requested-with"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
   const run = (mw: any) =>
     new Promise<void>((resolve) => mw(req as any, res as any, () => resolve()));
 
