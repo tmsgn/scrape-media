@@ -40,9 +40,17 @@ export async function launchBrowser(
       defaultViewport: { width: 1366, height: 768, deviceScaleFactor: 1 },
       env: {
         ...process.env,
-        LD_LIBRARY_PATH: ["/tmp", process.env.LD_LIBRARY_PATH]
+        LD_LIBRARY_PATH: [
+          "/tmp",
+          "/var/task",
+          "/var/task/node_modules/@sparticuz/chromium/bin",
+          "/usr/lib64",
+          "/lib64",
+          process.env.LD_LIBRARY_PATH,
+        ]
           .filter(Boolean)
           .join(":"),
+        FONTCONFIG_PATH: process.env.FONTCONFIG_PATH || "/tmp",
       },
       ...options,
     } as PuppeteerLaunchOptions;
