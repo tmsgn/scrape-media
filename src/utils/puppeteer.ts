@@ -6,7 +6,11 @@ type LaunchOptions = any;
 export async function launchBrowser(
   options: LaunchOptions = {}
 ): Promise<Browser> {
-  const isServerless = !!(process.env.VERCEL || process.env.AWS_REGION);
+  const isServerless = !!(
+    process.env.VERCEL ||
+    process.env.AWS_REGION ||
+    process.env.RENDER
+  );
   if (isServerless) {
     const { default: chromium } = await import("@sparticuz/chromium");
     const puppeteer = await import("puppeteer-core");
@@ -58,6 +62,9 @@ export async function launchBrowser(
       "--no-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
+      "--disable-web-security",
+      "--disable-features=VizDisplayCompositor",
+      "--single-process",
       ...extraArgs,
     ];
 
@@ -78,6 +85,7 @@ export async function launchBrowser(
           "/var/task/node_modules/@sparticuz/chromium/bin",
           "/usr/lib64",
           "/lib64",
+          "/opt/render/.cache/puppeteer",
           process.env.LD_LIBRARY_PATH,
         ]
           .filter(Boolean)
