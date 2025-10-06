@@ -74,7 +74,6 @@ async function createPage(browser: Browser) {
   }
   await page.setDefaultNavigationTimeout(30000);
   await page.setDefaultTimeout(30000);
-  await page.setRequestInterception(true);
   return page;
 }
 async function tryClickSelectors(frame: Frame, selectors: string[]) {
@@ -153,10 +152,10 @@ export async function scrapeProvider(targetUrl: string): Promise<string[]> {
 
   try {
     browser = await launchBrowser({ args: launchArgs });
-    const page = await createPage(browser);
+    let page = await createPage(browser);
     attachNetworkCollectors(page, m3u8Urls, subUrls);
 
-    // Retry navigation once to avoid transient 'session closed' during cold start
+    // First navigation without interception; if session closes, recreate page and retry once
     for (let i = 0; i < 2; i++) {
       try {
         await page.goto(targetUrl, {
@@ -166,9 +165,19 @@ export async function scrapeProvider(targetUrl: string): Promise<string[]> {
         break;
       } catch (e) {
         if (i === 1) throw e;
+        try {
+          await page.close();
+        } catch {}
+        page = await createPage(browser);
+        attachNetworkCollectors(page, m3u8Urls, subUrls);
         await delay(300);
       }
     }
+
+    // Enable interception after first navigation
+    try {
+      await page.setRequestInterception(true);
+    } catch {}
     await delay(PASSIVE_WAIT_MS);
     if (m3u8Urls.size > 0) return Array.from(m3u8Urls);
 
@@ -211,7 +220,7 @@ export async function scrapeProviderWithSubtitles(
 
   try {
     browser = await launchBrowser({ args: launchArgs });
-    const page = await createPage(browser);
+    let page = await createPage(browser);
     attachNetworkCollectors(page, m3u8Urls, subUrls);
 
     for (let i = 0; i < 2; i++) {
@@ -223,9 +232,19 @@ export async function scrapeProviderWithSubtitles(
         break;
       } catch (e) {
         if (i === 1) throw e;
+        try {
+          await page.close();
+        } catch {}
+        page = await createPage(browser);
+        attachNetworkCollectors(page, m3u8Urls, subUrls);
         await delay(300);
       }
     }
+
+    // Enable interception after first navigation
+    try {
+      await page.setRequestInterception(true);
+    } catch {}
     await delay(PASSIVE_WAIT_MS);
 
     // Attempt to extract subtitles from common players in DOM as a fallback
