@@ -8,6 +8,7 @@ export async function launchBrowser(
 ): Promise<Browser> {
   const isServerless = !!(
     process.env.VERCEL ||
+    process.env.VERCEL_ENV ||
     process.env.AWS_REGION ||
     process.env.RENDER
   );
@@ -72,29 +73,8 @@ export async function launchBrowser(
       executablePath: executablePath || undefined,
       headless,
       args,
-      // Use Chromium's suggested viewport settings to keep DevTools emulation consistent
-      defaultViewport: (chromium as any).defaultViewport ?? null,
       ignoreHTTPSErrors: true,
       protocolTimeout: 60_000,
-      userDataDir: (process.env.TMPDIR || "/tmp") + "/puppeteer_dev_profile",
-      env: {
-        ...process.env,
-        LD_LIBRARY_PATH: [
-          "/tmp",
-          "/var/task",
-          "/var/task/node_modules/@sparticuz/chromium/bin",
-          "/usr/lib64",
-          "/lib64",
-          "/opt/render/.cache/puppeteer",
-          process.env.LD_LIBRARY_PATH,
-        ]
-          .filter(Boolean)
-          .join(":"),
-        FONTCONFIG_PATH: process.env.FONTCONFIG_PATH || "/tmp",
-        TMPDIR: process.env.TMPDIR || "/tmp",
-        HOME: process.env.HOME || "/tmp",
-        XDG_CACHE_HOME: process.env.XDG_CACHE_HOME || "/tmp",
-      },
       ...options,
     } as LaunchOptions;
 
