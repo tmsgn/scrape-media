@@ -1,7 +1,6 @@
 {
   "version": 2,
   "regions": ["iad1"],
-  "functions": {},
   "headers": [
     {
       "source": "/api/(.*)",
