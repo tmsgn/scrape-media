@@ -1,7 +1,10 @@
-import type { Browser, PuppeteerLaunchOptions } from "puppeteer-core";
+import type { Browser } from "puppeteer-core";
+
+// Local alias to avoid version-specific type export differences across puppeteer-core versions
+type LaunchOptions = any;
 
 export async function launchBrowser(
-  options: PuppeteerLaunchOptions = {}
+  options: LaunchOptions = {}
 ): Promise<Browser> {
   const isServerless = !!(process.env.VERCEL || process.env.AWS_REGION);
   if (isServerless) {
@@ -34,7 +37,7 @@ export async function launchBrowser(
       headless,
     });
 
-    const launchOptions: PuppeteerLaunchOptions = {
+  const launchOptions: LaunchOptions = {
       executablePath: executablePath || undefined,
       headless,
       args: mergedArgs,
@@ -57,7 +60,7 @@ export async function launchBrowser(
         XDG_CACHE_HOME: process.env.XDG_CACHE_HOME || "/tmp",
       },
       ...options,
-    } as PuppeteerLaunchOptions;
+    } as LaunchOptions;
 
     return puppeteer.launch(launchOptions);
   }
