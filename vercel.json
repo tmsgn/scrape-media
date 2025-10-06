@@ -3,7 +3,8 @@
   "regions": ["iad1"],
   "functions": {
     "api/**/*.ts": {
-      "memory": 1536,
+      "runtime": "nodejs20.x",
+      "memory": 2048,
       "environment": {
         "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
       },
