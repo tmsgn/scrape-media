@@ -1,5 +1,4 @@
 import { DATABASE_URL, isDev } from "../utils/config.js";
-import { createPool } from "@vercel/postgres";
 
 type ViewRow = {
   api_key: string;
@@ -10,21 +9,10 @@ type ViewRow = {
 // In-memory fallback store
 const memViews = new Map<string, number>(); // key: `${apiKey}:${yyyy-mm-dd}` -> count
 
-const pool = DATABASE_URL
-  ? createPool({ connectionString: DATABASE_URL })
-  : null;
+// Database pool removed - using in-memory storage only
+const pool = null;
 
-async function ensureSchema() {
-  if (!pool) return;
-  await pool.sql`CREATE TABLE IF NOT EXISTS api_usage (
-    api_key TEXT NOT NULL,
-    date DATE NOT NULL,
-    count INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (api_key, date)
-  );`;
-}
-
-ensureSchema().catch(() => {});
+// Schema creation removed - using in-memory storage only
 
 function today() {
   const d = new Date();
