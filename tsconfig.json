@@ -11,5 +11,6 @@
     "resolveJsonModule": true,
     "strict": false
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/swagger.ts"]
 }

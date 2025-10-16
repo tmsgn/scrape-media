@@ -1,17 +1,17 @@
 export const providers = [
     {
+        name: "VidSrc (rip)",
+        idType: "imdb",
+        url: ({ type, id, season, episode }) => type === "movie"
+            ? `https://vidsrc.rip/embed/movie/${id}`
+            : `https://vidsrc.rip/embed/tv/${id}/${season}-${episode}`,
+    },
+    {
         name: "VidRock",
         idType: "tmdb",
         url: ({ type, id, season, episode }) => type === "movie"
-            ? `https://vidrock.net/movie/${id}`
+            ? `https://vidrock.net/mega/movie/${id}`
             : `https://vidrock.net/tv/${id}/${season}/${episode}`,
-    },
-    {
-        name: "Videasy",
-        idType: "tmdb",
-        url: ({ type, id, season, episode }) => type === "movie"
-            ? `https://player.videasy.net/movie/${id}`
-            : `https://player.videasy.net/tv/${id}/${season}/${episode}`,
     },
     {
         name: "MoviesApi",

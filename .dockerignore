@@ -1,0 +1,22 @@
+# Dependency directories
+node_modules
+.pnpm-store
+
+# Build output
+/dist
+
+# VCS
+.git
+.gitignore
+
+# Logs and temp
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.swp
+.DS_Store
+
+# IDE
+.vscode
+.idea
